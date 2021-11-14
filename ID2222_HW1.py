@@ -38,39 +38,64 @@ def compute_loss(trueValue, guess):
 
 def LSH(collection, t, b=1, r=100):
 
-  if(len(collection[0])%b or len(collection)!=r):
+  if(len(collection[0])%b or len(collection[0])!=r):
     raise ValueError
 
-  #compute r with t and b
-  factors = factorization(r)
-  r = factors[bisect.bisect_left(factors, 1/-math.log(t, b))]
+  #compute b with t and r
+  if b == 1:
+    factors = factorization(r)
+    b = factors[bisect.bisect_left(factors, 1/-math.log(t, r))]
+
+  candidatePairs = set()
 
   for i in range(r):
+    #traverse all rows
     bucket = {}
-    for j in range(len(collection)):
-      band = collection[j,i:i+b-1]
-      
-  return
+    for j in range(int(len(collection[0])/b)):
+      #traverse all columns in a row and hash bands to bucket
+      band = collection[j*b][i:i+b-1]
+      hashvalue = 1
+      for k in band:
+        if(k):
+          hashvalue *= k
+      if hashvalue in bucket.keys(): 
+        bucket[hashvalue].append(j)
+      else:
+        bucket[hashvalue] = [j]
+    
+    for value in bucket.values():
+      #find candidates from bucket
+      candidates = value
+      while(len(candidates)>1):
+        j = candidates.pop()
+        for k in candidates:
+          candidatePairs.add(frozenset([j,k]))
 
+  return candidatePairs
 
 def factorization(num):
   return [i for i in range(1, num) if(num%i == 0)]
 
+def print_realHashDigit(collection):
+  """ calculate max and mean hash digit, return with tuple(max, mean)"""
+  sum_ = 0
+  mean_ = 0
+  max_ = 0
+  i = 0
+  for text in collection:
+    for hash_num in text:
+      sum_ += hash_num
+      i += 1
+      if hash_num > max_:
+        max_ = hash_num
+  mean_ = int(sum_/i)
+  print("max:{0}\nmean:{1}".format(max_, mean_))
+  return max_, mean_
 
 if __name__ == "__main__":
-
-  """   k = 6
-  sentenceA = 'this is a foo bar sentence and i want to ngramize it'
-  sentenceB = 'this are two foo bar sentences and i want to ngramize it'
-  sentenceRandomA = ''.join(random.choice(string.ascii_uppercase) for j in range(10000))
-  sentenceRandomB = ''.join(random.choice(string.ascii_uppercase) for j in range(10000))
-  loss = 0
-  for i in range(10000):
-    di = compare_sets(k_shingle(sentenceRandomA), k_shingle(sentenceRandomB))
-    sig = compare_signiture(min_hash(k_shingle(sentenceRandomA)), min_hash(k_shingle(sentenceRandomB)))
-    loss += compute_loss(di, sig)
-  loss /= 10000 """
-  factors = factorization(100)
-  r = 1/-math.log(0.8, 100)
-  factors[bisect.bisect_left(factors, r)]
-  print(factors[bisect.bisect_left(factors, r)])
+  collection = []
+  with open("data/data.txt", encoding='utf-8') as file:
+    collection = [min_hash(k_shingle(i))  for i in file.read().split("\n")]
+    #print_realHashDigit(collection)
+  candidatePairs = LSH(collection, 0.5)
+  print(candidatePairs)

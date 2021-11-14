@@ -1,4 +1,4 @@
-import time, string, random, hashlib, bisect
+import time, string, random, hashlib, bisect, math
 
 def k_shingle(text, k=3):
   """ Convert sentense into character ngrams. """
@@ -36,12 +36,26 @@ def compare_signiture(sigA, sigB):
 def compute_loss(trueValue, guess):
   return abs(guess-trueValue)/trueValue
 
-def LSH(collection, t, r=5, b=100):
+def LSH(collection, t, b=1, r=100):
 
-  if(len(collection[0])%r or len(collection)!=b or len(collection[0])!=0):
+  if(len(collection[0])%b or len(collection)!=r):
     raise ValueError
-  
-  
+
+  #compute r with t and b
+  factors = factorization(r)
+  r = factors[bisect.bisect_left(factors, 1/-math.log(t, b))]
+
+  for i in range(r):
+    bucket = {}
+    for j in range(len(collection)):
+      band = collection[j,i:i+b-1]
+      
+  return
+
+
+def factorization(num):
+  return [i for i in range(1, num) if(num%i == 0)]
+
 
 if __name__ == "__main__":
 
@@ -56,5 +70,7 @@ if __name__ == "__main__":
     sig = compare_signiture(min_hash(k_shingle(sentenceRandomA)), min_hash(k_shingle(sentenceRandomB)))
     loss += compute_loss(di, sig)
   loss /= 10000 """
-  
-  print(loss)
+  factors = factorization(100)
+  r = 1/-math.log(0.8, 100)
+  factors[bisect.bisect_left(factors, r)]
+  print(factors[bisect.bisect_left(factors, r)])

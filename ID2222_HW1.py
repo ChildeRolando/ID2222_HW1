@@ -38,19 +38,20 @@ def compute_loss(trueValue, guess):
 
 def LSH(collection, t, b=1, r=100):
 
-  if(len(collection[0])%b or len(collection)!=r):
+  if(len(collection[0])%b or len(collection[0])!=r):
     raise ValueError
 
   #compute r with t and b
   factors = factorization(r)
-  r = factors[bisect.bisect_left(factors, 1/-math.log(t, b))]
+  b = factors[bisect.bisect_left(factors, 1/-math.log(t, r))]
+  candidatePairs = set()
 
   for i in range(r):
     #traverse all rows
     bucket = {}
     for j in range(len(collection)):
-      #traverse all columns in a row
-      band = collection[j,i:i+b-1]
+      #traverse all columns in a row and hash bands to bucket
+      band = collection[j, i:i+b-1]
       hashvalue = 1
       for i in band:
         if(i):
@@ -59,8 +60,16 @@ def LSH(collection, t, b=1, r=100):
         bucket[hashvalue].append(j)
       else:
         bucket[hashvalue] = [j]
-  return
+    
+    for i in bucket.values():
+      #find candidates from bucket
+      candidates = i
+      while(len(candidates)>1):
+        j = candidates.pop()
+        for k in candidates:
+          candidatePairs.add({j,k})
 
+  return candidatePairs
 
 def factorization(num):
   return [i for i in range(1, num) if(num%i == 0)]
@@ -81,10 +90,16 @@ if __name__ == "__main__":
     k += mean(min_hash(k_shingle(sentenceB)))
   k /= 100
   m /= 100 """
-  bucket = {}
+  """ bucket = {}
   hashvalue = 1
   if hashvalue in bucket.keys(): 
     bucket[hashvalue].append(hashvalue)
   else:
     bucket[hashvalue] = [hashvalue]
-  print(bucket)
+  print(bucket) """
+
+  collection = []
+  with open("data/data.txt", encoding='utf-8') as file:
+    collection = [min_hash(k_shingle(i))  for i in file.read().split("\n")]
+  candidatePairs = LSH(collection, 0.7)
+  print(candidatePairs)

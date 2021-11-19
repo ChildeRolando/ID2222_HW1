@@ -48,20 +48,21 @@ def LSH(collection, t, b=1, r=100):
 
   candidatePairs = set()
 
-  for i in range(r):
+  for j in range(int(r/b)):
     #traverse all rows
     bucket = {}
-    for j in range(int(len(collection[0])/b)):
+    for i in range(len(collection)):
       #traverse all columns in a row and hash bands to bucket
-      band = collection[j*b][i:i+b-1]
+      band = collection[i][j*b:j*b+b]
       hashvalue = 1
-      for k in band:
-        if(k):
-          hashvalue *= k
+      for num in band:
+        if num:
+          hashvalue += num
+      hashvalue = int(hashlib.sha256(str(band).encode('utf-8')).hexdigest(), 16)
       if hashvalue in bucket.keys(): 
-        bucket[hashvalue].append(j)
+        bucket[hashvalue].append(i)
       else:
-        bucket[hashvalue] = [j]
+        bucket[hashvalue] = [i]
     
     for value in bucket.values():
       #find candidates from bucket
@@ -70,7 +71,7 @@ def LSH(collection, t, b=1, r=100):
         j = candidates.pop()
         for k in candidates:
           candidatePairs.add(frozenset([j,k]))
-
+  candidatePairs = [set(i) for i in candidatePairs]
   return candidatePairs
 
 def factorization(num):
@@ -92,10 +93,25 @@ def print_realHashDigit(collection):
   print("max:{0}\nmean:{1}".format(max_, mean_))
   return max_, mean_
 
+def signiture_similarity_sort(collection):
+  ranking = []
+  for i in range(len(collection)):
+    s1 = collection[i]
+    for j in range(i+1, len(collection)):
+      s2 = collection[j]
+      ranking.append([compare_signiture(s1,s2), {i,j}])
+  rank = sorted(ranking, key=(lambda x:x[0]), reverse=True)
+  return rank
+
 if __name__ == "__main__":
   collection = []
+  t = 0.6
   with open("data/data.txt", encoding='utf-8') as file:
-    collection = [min_hash(k_shingle(i))  for i in file.read().split("\n")]
+    rawTexts = file.read().split("\n")
+    kShingles = [k_shingle(i) for i in rawTexts]
+    collection = [min_hash(i, 200)  for i in kShingles]
     #print_realHashDigit(collection)
-  candidatePairs = LSH(collection, 0.5)
-  print(candidatePairs)
+  candidatePairs = LSH(collection, t, 8, 200)
+  rank = signiture_similarity_sort(collection)
+  print("rank:\n",[i for i in rank if i[0]>0.4])
+  print("\ncandidatePairs:\n",candidatePairs)

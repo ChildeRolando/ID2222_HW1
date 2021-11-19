@@ -2,7 +2,7 @@ import time, string, random, hashlib, bisect, math
 
 def k_shingle(text, k=3):
   """ Convert sentense into character ngrams. """
-  return sorted([int(hashlib.sha256(text[i:i+k].encode('utf-8')).hexdigest(), 16) % (10**8) for i in range(len(text)-k+1)])
+  return sorted([int(hashlib.sha256(text[i:i+k].encode('utf-8')).hexdigest(), 16) % (10**16) for i in range(len(text)-k+1)])
 
 def speed_test():
 
@@ -20,10 +20,10 @@ def compare_sets(a, b):
   union = aSet.union(bSet)
   return len(inter)/len(union)
 
-def min_hash(doc, signitureLen=100, seed=0):
+def min_hash(doc, signitureLen=100, seed=666):
   random.seed(seed)
-  randomList = [random.randint(0, 10**8-1) for i in range(signitureLen)]
-  signiture = [doc[i]-x if i!=len(doc) else doc[0]-x+10**8 for (i,x) in [(bisect.bisect_left(doc, rand), rand) for rand in randomList]]
+  randomList = [random.randint(0, 10**16-1) for i in range(signitureLen)]
+  signiture = [doc[i]-x if i!=len(doc) else doc[0]-x+10**16 for (i,x) in [(bisect.bisect_left(doc, rand), rand) for rand in randomList]]
   return signiture
 
 def compare_signiture(sigA, sigB):
@@ -55,10 +55,10 @@ def LSH(collection, t, b=1, r=100):
       #traverse all columns in a row and hash bands to bucket
       band = collection[i][j*b:j*b+b]
       hashvalue = 1
-      for num in band:
+      """ for num in band:
         if num:
-          hashvalue += num
-      hashvalue = int(hashlib.sha256(str(band).encode('utf-8')).hexdigest(), 16)
+          hashvalue *= num """
+      hashvalue = int(hashlib.sha256("".join(str(x) for x in band).encode('utf-8')).hexdigest(), 16)
       if hashvalue in bucket.keys(): 
         bucket[hashvalue].append(i)
       else:
@@ -109,9 +109,12 @@ if __name__ == "__main__":
   with open("data/data.txt", encoding='utf-8') as file:
     rawTexts = file.read().split("\n")
     kShingles = [k_shingle(i) for i in rawTexts]
-    collection = [min_hash(i, 200)  for i in kShingles]
+    collection = [min_hash(i, 600)  for i in kShingles]
     #print_realHashDigit(collection)
-  candidatePairs = LSH(collection, t, 8, 200)
+  candidatePairs = LSH(collection, t, 8, 600)
   rank = signiture_similarity_sort(collection)
   print("rank:\n",[i for i in rank if i[0]>0.4])
   print("\ncandidatePairs:\n",candidatePairs)
+  for pair in candidatePairs:
+    pair = list(pair)
+    print("{0}&{1}:{2}".format(pair[0],pair[1],compare_sets(k_shingle(rawTexts[pair[0]]),k_shingle(rawTexts[pair[1]]))))
